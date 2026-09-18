@@ -1,10 +1,10 @@
 ## PRIDE DBAlign
 
-**Multi-GNSS Precise-Product Day-Boundary Alignment Toolkit**
+**Multi-GNSS Satellite Product Day-Boundary Discontinuity Alignment Toolkit**
 
 PRIDE DBAlign is used for the day-boundary discontinuity alignment of GNSS precise orbit/clock/bias products, developed by the PRIDE team (http://pride.apm.ac.cn). We make this software package open source with the goal of promoting the implementation of United Nations (UN) International Committee on GNSS (ICG) 2025 recommendation, "Continuous GNSS Time Transfer across Day Boundaries using IGS Products" (https://www.unoosa.org/documents/pdf/icg/2025/ICG-19/ICG-19_WG-D_Recommendation_B_.pdf). In particular, PRIDE DBAlign is able to align precise satellite products across day boundaries to keep ambiguities continuous beyond the midnight epochs. As a result, GNSS positioning and time/frequency transfer spanning days could be improved by avoiding day-boundary “jumps”. PRIDE DBAlign utilizes several library functions, header files, and table files from PRIDE PPP-AR (https://github.com/PrideLab/PRIDE-PPPAR), another open-source software developed by the same team.
 
-The development of PRIDE DBAlign software is funded by the National Natural Science Foundation of China (Grant No. U25D8020) and supported by Sub-Commission 4.2 of the International Association of Geodesy (IAG), the Wuhan Combination Center (WCC), and the Bias & Ambiguity Resolution Committee (BAR) of the International GNSS Service (IGS).
+The development of PRIDE DBAlign software is funded by the National Natural Science Foundation of China (Grant No. U25D8020) and supported by Sub-Commission 4.2 of the International Association of Geodesy (IAG), the Wuhan Combination Center (WCC, https://igs.org/wg/wcc/), and the Bias & Ambiguity Resolution Committee (BAR, https://igs.org/wg/bias-and-ambiguity-resolution/) of the International GNSS Service (IGS).
 
 The open-source software PRIDE DBAlign can be downloaded at https://github.com/PrideLab/PRIDE-DBAlign.
 For the latest updates regarding support, and frequently asked questions (FAQs), please visit http://pride.apm.ac.cn/.
