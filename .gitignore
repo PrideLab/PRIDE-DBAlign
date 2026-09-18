@@ -1,0 +1,21 @@
+# Build outputs
+# bin/
+src/**/.obj/
+src/**/obj/
+src/algirc/algirc*
+!src/algirc/*.f90
+!src/algirc/*.sh
+src/.vscode
+*.o
+*.d
+*.mod
+*.smod
+*.a
+*.so
+*.exe
+
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store

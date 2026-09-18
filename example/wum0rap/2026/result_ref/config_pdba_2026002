@@ -1,0 +1,142 @@
+# Configuration template for PRIDE DBAlign
+
+## Satellite product
+Product directory      = /home/wyy/code/PRIDE-DBAlign/example/wum0rap/2026
+Satellite orbit        = WUM0MGXRAP_20260010000_01D_05M_ORB.SP3 WUM0MGXRAP_20260020000_01D_05M_ORB.SP3
+Satellite clock        = WUM0MGXRAP_20260010000_01D_30S_CLK.CLK WUM0MGXRAP_20260020000_01D_30S_CLK.CLK
+Code/phase bias        = WUM0MGXRAP_20260010000_01D_01D_OSB.BIA WUM0MGXRAP_20260020000_01D_01D_OSB.BIA
+ERP file               = NONE
+
+## Align options
+Write DOCB             = YES                     ! write day-boundary discontinuity records
+Unify BDS-2/3          = NO
+
+## Satellite list
+# Inserting `#' at the beginning of individual GNSS PRN means not to use this satellite
++GNSS satellites
+*PRN
+ G01
+ G02
+ G03
+ G04
+ G05
+ G06
+ G07
+ G08
+ G09
+ G10
+ G11
+ G12
+ G13
+ G14
+ G15
+ G16
+ G17
+ G18
+ G19
+ G20
+ G21
+ G22
+ G23
+ G24
+ G25
+ G26
+ G27
+ G28
+ G29
+ G30
+ G31
+ G32
+ E01
+ E02
+ E03
+ E04
+ E05
+ E06
+ E07
+ E08
+ E09
+ E10
+ E11
+ E12
+ E13
+ E14
+ E15
+ E16
+ E17
+ E18
+ E19
+ E20
+ E21
+ E22
+ E23
+ E24
+ E25
+ E26
+ E27
+ E28
+ E29
+ E30
+ E31
+ E32
+ E33
+ E34
+ E35
+ E36
+#C01
+#C02
+#C03
+#C04
+#C05
+ C06
+ C07
+ C08
+ C09
+ C10
+ C11
+ C12
+ C13
+ C14
+ C15
+ C16
+ C17
+ C18
+ C19
+ C20
+ C21
+ C22
+ C23
+ C24
+ C25
+ C26
+ C27
+ C28
+ C29
+ C30
+ C31
+ C32
+ C33
+ C34
+ C35
+ C36
+ C37
+ C38
+ C39
+ C40
+ C41
+ C42
+ C43
+ C44
+ C45
+ C46
+ C47
+ C48
+ C49
+ C50
+ C56
+ C57
+ C58
+#C59
+#C60
+#C61
+-GNSS satellites
