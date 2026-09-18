@@ -1,4 +1,4 @@
-## PRIDE DBAlign
+## PRIDE DBAlign v1.0
 
 **Multi-GNSS Satellite Product Day-Boundary Discontinuity Alignment Toolkit**
 
