@@ -1,3 +1,6 @@
+![pridelab.icon](https://github.com/PrideLab/PRIDE-DBAlign/blob/main/doc/PRIDE.png)
+
+
 ## PRIDE DBAlign v1.0
 
 **Multi-GNSS Satellite Product Day-Boundary Discontinuity Alignment Toolkit**
