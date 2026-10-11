@@ -50,6 +50,8 @@ SATELLITE_BLOCK_ORDER = [
     "BLOCK IIIA", "GALILEO-1", "GALILEO-2",
 ]
 
+BDS_MERGED_MJD = 61153
+
 
 # Function definitions.
 def show_help():
@@ -76,7 +78,7 @@ def select_prns(prnlst, system, min_prn=None, max_prn=None):
             if max_prn is not None and prn_number > max_prn:
                 continue
         indices.append(index)
-    return pylab.array(indices)
+    return pylab.array(indices, dtype=int)
 
 
 def read_sat_para(filnam, mjday):
@@ -162,6 +164,15 @@ def read_algirc_out(prnlst, filnam, mjd0, mjd1):
             datsec6[iprn, ifrq, 1, imjd] = int(line[29:38])
             continue
 
+        if record_len == 124:
+            if line[11] == "*":
+                flglst[iprn, imjd] = 1
+            # Preserve the original radial/clock columns in the expanded table.
+            starts = (20, 47, 58, 85, 96, 105)
+            for column, start in enumerate(starts):
+                datsec1[iprn, column, imjd] = int(line[start:start + 9])
+            continue
+
         if record_len == 79:
             if line[11] == "*":
                 flglst[iprn, imjd] = 1
@@ -242,12 +253,17 @@ def plot_orbdbd_out(fignam, satlst, flglst, datasec1, mjd, mjd0, mjd1):
         (select_prns(prnlst, "C", min_prn=17), "BDS-3"),
     ]
 
+    # Use the last plotted day to select the BDS panel layout.
+    if mjd >= BDS_MERGED_MJD:
+        sysidx = sysidx[:2] + [(select_prns(prnlst, "C"), "BDS")]
+
     # Configure plot layout.
     # pylab.rcParams['font.family'] = 'Helvetica'
     pylab.rcParams["font.size"] = 14
-    height_ratios = [len(system[0]) for system in sysidx]
+    height_ratios = [max(1, len(system[0])) for system in sysidx]
+    first_system = next((i for i, system in enumerate(sysidx) if len(system[0])), None)
     fig, ax = pylab.subplots(
-        4,
+        len(sysidx),
         1,
         figsize=(10, 20),
         gridspec_kw={"height_ratios": height_ratios},
@@ -283,11 +299,14 @@ def plot_orbdbd_out(fignam, satlst, flglst, datasec1, mjd, mjd0, mjd1):
     # Draw heatmaps.
     for i in range(len(sysidx)):
         sat_idx = sysidx[i][0]
+        if len(sat_idx) == 0:
+            ax[i].axis("off")
+            continue
         heatmap = ax[i].imshow(
             data[sat_idx], aspect="auto", cmap=colormap, norm=norm
         )
 
-        if i == 0:
+        if i == first_system:
             cbar_ax = fig.add_axes([0.089, 0.908, 0.772, 0.006])
             fig.colorbar(heatmap, cax=cbar_ax, orientation="horizontal")
 
@@ -360,7 +379,7 @@ def main(argv):
 
     # Extract MJD tags from ALGIRC output to define the plotting year span.
     tmpout = subprocess.run(
-        ["grep", "-o", r" [0-9]\{5\} ", filnam],
+        ["awk", r'$1 ~ /^[A-Z][0-9][0-9]$/ && substr($0,14,5) ~ /^[0-9][0-9][0-9][0-9][0-9]$/ {print substr($0,14,5)}', filnam],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         universal_newlines=True,
