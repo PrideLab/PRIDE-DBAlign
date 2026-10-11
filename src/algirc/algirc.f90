@@ -103,6 +103,7 @@ program algirc
   logical*1     l_unify_bd23
   logical*1     l_unify_default
   logical*1     l_orb_dbd
+  logical*1     l_orb_24, l_clk_24
   logical*1     l_extorb
 
   !! argument
@@ -112,6 +113,7 @@ program algirc
 
   !! file
   integer*4     cfglfn, outlfn
+  integer*4     clk_label
   character*256 cfgfil, outfil
   character*256 prddir
   character*256 sp3fil(2), clkfil(2), biafil(2)
@@ -139,9 +141,11 @@ program algirc
   !! orbit
   real*8        xyz0(6, MAXSAT)
   real*8        xyz1(6, MAXSAT)
+  real*8        xyz2(6, MAXSAT)
   real*8        xyz_trig_ext(6, MAXSAT, TRIG_HISTORY_POINTS)
   real*8        xyz_orb_ext(6, MAXSAT)
   real*8        orb_dbd(MAXSAT)
+  real*8        alnorb_dbd(MAXSAT), crsorb_dbd(MAXSAT)
   integer*4     orb_ext_nprn
   character*3   orb_ext_prn(MAXSAT)
 
@@ -159,6 +163,7 @@ program algirc
 
   !! bias (all channels)
   real*8        ocb_itf_dbd(0:MAXCMB,MAXSAT,MAXTYP/4)
+  real*8        osb_dbd(0:1, MAXSAT, MAXTYP/4)
 
   !! coeff
   real*8        FRQ1(MAXCMB, MAXSYS), FRQ2(MAXCMB, MAXSYS), FRTO(MAXCMB, MAXSYS)
@@ -167,11 +172,12 @@ program algirc
 
   !! local
   logical*1     shift_half_cycle(MAXSYS+1), l_orb_corr
-  integer*4     ic, i0, i1, iprn, it, j, k, orb_jd0, orb_jd1, orb_ext_jd
+  integer*4     ic, i0, i1, iprn, it, j, k, ibias, orb_jd0, orb_jd1, orb_ext_jd
   character*3   prn
   real*8        var, dummy, l1, l2, c1, c2, tmp_off(MAXSAT)
   real*8        orb_sod0, orb_sod1, orb_gap, orb_intv0, orb_ext_sod
   real*8        ghar, xrot, yrot, zrot
+  real*8        vel(3), along(3), cros(3), radial(3), length
   character*256 orb_erpfile
   real*8        mate2j(3,3), rmte2j(3,3), xpole, ypole
   logical       use_orb_erp
@@ -229,6 +235,10 @@ program algirc
   clk_dbd = 0.d0
   clk_extp = 0.d0
   orb_dbd = 0.d0
+  alnorb_dbd = 0.d0
+  crsorb_dbd = 0.d0
+  l_orb_24 = .false.
+  l_clk_24 = .false.
   xyz_orb_ext = 0.d0
   orb_ext_nprn = 0
   orb_ext_prn = ''
@@ -369,6 +379,7 @@ program algirc
   prnlst = ''
   do k = 1, 2
     i0 = 0
+    clk_label = 0
     outlfn = get_valid_unit(10)
     open (outlfn, file=trim(prddir)//trim(clkfil(k)), status='old', action='read', iostat=ierr)
     if (ierr .ne. 0) then
@@ -381,9 +392,17 @@ program algirc
         write (*, '(2a)') '***ERROR('//CPROGNAME//'): read clock header ', trim(prddir)//trim(clkfil(k))
         call exit(1)
       end if
-      if (line(61:68) .eq. 'PRN LIST') then
+      if (clk_label .eq. 0) then
+        ! Header labels start in column 61, or 66 for RINEX clock 3.04.
+        clk_label = index(line, 'RINEX VERSION / TYPE')
+        if (clk_label .ne. 61 .and. clk_label .ne. 66) then
+          write (*, '(2a)') '***ERROR('//CPROGNAME//'): invalid clock header ', trim(prddir)//trim(clkfil(k))
+          call exit(1)
+        end if
+      end if
+      if (trim(line(clk_label:)) .eq. 'PRN LIST') then
         i0 = i0 + 1
-        do j = 1, 15
+        do j = 1, (clk_label - 1)/4
           prn = line((j - 1)*4 + 1:(j - 1)*4 + 3)
           if (len_trim(prn) .eq. 0) cycle
           if (index(GNSS_PRIO, prn(1:1)) .le. 0) cycle
@@ -398,7 +417,7 @@ program algirc
           nprn = nprn + 1
           prnlst(nprn) = prn
         end do
-      else if (line(61:73) .eq. 'END OF HEADER') then
+      else if (trim(line(clk_label:)) .eq. 'END OF HEADER') then
         exit
       end if
     end do
@@ -459,11 +478,13 @@ program algirc
   if (len_trim(clkfil(1)) .gt. 0 .and. len_trim(clkfil(2)) .gt. 0) then
     call rdclkh(trim(prddir)//trim(clkfil(1)), mjd0, sod0, intv, period)
     clk_end_sod = sod0 + period
+    l_clk_24 = abs(clk_end_sod - 86400.d0) .le. 1.d-3
     clk_intv0 = intv
     clk_period0 = period
 
     call rdclkh(trim(prddir)//trim(clkfil(2)), mjd1, sod1, intv, period)
-    if (l_unify_default) l_unify_bd23 = mjd1 .ge. 61152
+    if (l_unify_default) l_unify_bd23 = mjd1 .gt. 61152
+    l_clk_24 = l_clk_24 .and. abs(sod1) .le. 1.d-3
     if (abs(sod1) .gt. MAXWND) then
       write (*, '(a,a,a,f10.3)') '***ERROR('//CPROGNAME//'): target-day clock does not start at 00:00:00 <', &
         trim(clkfil(2)), '>, first epoch SOD = ', sod1
@@ -561,6 +582,7 @@ program algirc
     l_orb_corr = .true.
     xyz0 = 0.d0
     xyz1 = 0.d0
+    xyz2 = 0.d0
 
     HORB%nprn = 0
     HORB%prn = ''
@@ -568,6 +590,7 @@ program algirc
     orb_jd0 = HORB%jd1
     orb_sod0 = HORB%sod1
     orb_intv0 = HORB%dintv
+    call rdsp3i(mjd1 - 1, 86400.d0 - orb_intv0, nprn, prnlst, xyz2, ierr)
     call rdsp3c()
 
     HORB%nprn = 0
@@ -594,6 +617,7 @@ program algirc
       HORB%prn = ''
       call rdsp3h(trim(prddir)//trim(sp3fil(1)), HORB%jd0, HORB%sod0, HORB%jd1, HORB%sod1, HORB%dintv, HORB%nprn, HORB%prn)
       call rdsp3i(orb_jd1, orb_sod1, nprn, prnlst, xyz0, ierr)
+      l_orb_24 = ierr .eq. 0 .and. orb_jd1 .eq. mjd1 .and. abs(orb_sod1) .le. 1.d-3
       call rdsp3c()
     else if (orb_gap .gt. MAXWND .and. orb_gap .le. MAX_ORB_EXTRAPOLATION) then
       write (*, '(a,f8.1,a,i0,a,i0,a,i0,a)') '%%%MESSAGE('//CPROGNAME//'): extrapolate orbit ', &
@@ -694,6 +718,7 @@ program algirc
       HORB%prn = ''
       call rdsp3h(trim(prddir)//trim(sp3fil(2)), HORB%jd0, HORB%sod0, HORB%jd1, HORB%sod1, HORB%dintv, HORB%nprn, HORB%prn)
       call rdsp3i(orb_jd1, orb_sod1, nprn, prnlst, xyz1, ierr)
+      l_orb_24 = l_orb_24 .and. ierr .eq. 0
       call rdsp3c()
     end if
 
@@ -714,6 +739,21 @@ program algirc
       !! radial orbit DBD (unit: s)
         orb_dbd(iprn) = dot(3, (xyz1(1:3, iprn) - xyz0(1:3, iprn)), &
           xyz1(1:3, iprn)/dsqrt(dot(3, xyz1(1:3, iprn), xyz1(1:3, iprn)))) * 1E3/VLIGHT 
+
+        if (all(xyz2(1:3, iprn) .eq. 0.d0) .or. any(abs(xyz2(1:3, iprn)) .gt. 1.d9)) cycle
+      !! tangential and normal orbit DBDs (unit: s)
+        vel = (xyz0(1:3, iprn) - xyz2(1:3, iprn)) * 1E3/orb_intv0
+        along = 0.d0
+        cros = 0.d0
+        radial = 0.d0
+        call unit_vector(3, xyz0(1:3, iprn)*1E3, radial, length)
+        call unit_vector(3, vel, along, length)
+        call cross(radial, along, cros)
+        call unit_vector(3, cros, cros, length)
+        call cross(cros, radial, along)
+        call unit_vector(3, along, along, length)
+        alnorb_dbd(iprn) = dot(3, (xyz1(1:3, iprn) - xyz0(1:3, iprn))*1E3, along)/VLIGHT
+        crsorb_dbd(iprn) = dot(3, (xyz1(1:3, iprn) - xyz0(1:3, iprn))*1E3, cros)/VLIGHT
       end do
     end if
   end if
@@ -1005,7 +1045,7 @@ program algirc
     call exit(1)
   end if
 
-  write (outlfn, '(a)')       '%%% INTEGER-RECOVERED CLOCK DAY-BOUNDARY DISCONTINUITY ANALYSIS FILE'
+  write (outlfn, '(a)')       '%%% INTEGER CLOCK DAY-BOUNDARY DISCONTINUITY ANALYSIS FILE'
   write (outlfn, '(a)')       '%%% Executor:                     '//CPROGNAME
   write (outlfn, '(a,i4,5(a1,i0.2))') '%%% Execute Time:                 ', &
     time_tag(1), '-', time_tag(2), '-', time_tag(3), ' ',                   &
@@ -1015,15 +1055,38 @@ program algirc
   write (outlfn, '(2a,1x,a)') '%%% SP3 Files:                    ', trim(sp3fil(1)), trim(sp3fil(2))
   write (outlfn, '(2a,1x,a)') '%%% CLK Files:                    ', trim(clkfil(1)), trim(clkfil(2))
   write (outlfn, '(2a,1x,a)') '%%% OSB Files:                    ', trim(biafil(1)), trim(biafil(2))
+  key = trim(merge('YES', 'NO ', l_wrt_docb))
+  if (l_backward) key = 'NO (disabled for backward alignment)'
+  write (outlfn, '(2a)')     '%%% Write DOCB:                   ', trim(key)
+  key = trim(merge('YES', 'NO ', l_unify_bd23))
+  if (l_unify_default) key = trim(key)//' (Default)'
+  write (outlfn, '(2a)')     '%%% Unify BDS-2/3:                ', trim(key)
 
   ic = 0
 
   write (outlfn, '(a)') ''
+  write (outlfn, '(a)') '0. AVAILABILITY OF PRODUCTS AT 24:00 EPOCH'
+  if (l_orb_24) then
+    write (outlfn, '(a)') ' ORBIT_24:00_EXIST: YES'
+  else
+    write (outlfn, '(a)') ' ORBIT_24:00_EXIST: NO'
+  end if
+  if (l_clk_24) then
+    write (outlfn, '(a)') ' CLOCK_24:00_EXIST: YES'
+  else
+    write (outlfn, '(a)') ' CLOCK_24:00_EXIST: NO'
+  end if
+
+  write (outlfn, '(a)') ''
   write (outlfn, '(a)') '1. RESULTS OF RADIAL ORBIT CORRECTION AND CLOCK'
-  write (outlfn, '(a)') '---------+---------+-------------------+-------------------+------------------'
-  write (outlfn, '(a)') ' PRN FRQ | A MJDAY |   RADORB    CLOCK |   RADORB    CLOCK |  CLK_RMS CLK_CORR'
-  write (outlfn, '(a)') '         |         |     (mm)     (mm) |     (ps)     (ps) |     (ps)     (ps)'
-  write (outlfn, '(a)') '---------+---------+-------------------+-------------------+------------------'
+  write (outlfn, '(a)') '---------+---------+-------------------------------------'// &
+                         '+-------------------------------------+---------------------------'
+  write (outlfn, '(a)') ' PRN FRQ | A MJDAY |   RADORB   ALNORB   CRSORB    CLOCK'// &
+                         ' |   RADORB   ALNORB   CRSORB    CLOCK |  CLK_RMS CLK_CORR CLK_RESI'
+  write (outlfn, '(a)') '         |         |     (mm)     (mm)     (mm)     (mm)'// &
+                         ' |     (ps)     (ps)     (ps)     (ps) |     (ps)     (ps)     (ps)'
+  write (outlfn, '(a)') '---------+---------+-------------------------------------'// &
+                         '+-------------------------------------+---------------------------'
   do iprn = 1, nprn
     key = ''
     if (.not. avlprn(0, iprn, 0)) then
@@ -1031,16 +1094,22 @@ program algirc
       if (abs(clk_dbd(iprn)) .le. 1.d-12) cycle
     end if
     i0 = index(GNSS_PRIO, prnlst(iprn)(1:1))
-    write (outlfn, '(a4,i4,2(1x,a1),i6,3(1x,a1,2i9))') &
+    write (outlfn, '(a4,i4,2(1x,a1),i6,2(1x,a1,4i9),(1x,a1,3i9))') &
       prnlst(iprn), ic, '|', key, mjd1,                &
       '|', nint(VLIGHT * 1E3  * orb_dbd(iprn)), &
+           nint(VLIGHT * 1E3  * alnorb_dbd(iprn)), &
+           nint(VLIGHT * 1E3  * crsorb_dbd(iprn)), &
            nint(VLIGHT * 1E3  * clk_dbd(iprn)), &
       '|', nint(         1E12 * orb_dbd(iprn)), &
+           nint(         1E12 * alnorb_dbd(iprn)), &
+           nint(         1E12 * crsorb_dbd(iprn)), &
            nint(         1E12 * clk_dbd(iprn)), &
       '|', nint(         1E12 * clk_rms(iprn)), &
-           nint(         1E12 * clk_off(iprn))
+           nint(         1E12 * clk_off(iprn)), &
+           nint(         1E12 * (clk_dbd(iprn) + clk_off(iprn) - orb_dbd(iprn)))
   end do
-  write (outlfn, '(a)') '---------+---------+-------------------+-------------------+------------------'
+  write (outlfn, '(a)') '---------+---------+-------------------------------------'// &
+                         '+-------------------------------------+---------------------------'
 
   write (outlfn, '(a)') ''
   write (outlfn, '(a)') '2. RESULTS OF DUAL-FREQUENCY GEOMETRY-FREE BIAS ALIGNMENT'
@@ -1091,36 +1160,6 @@ program algirc
   end do
   write (outlfn, '(a)') '---------+---------+-------------------+-------------------+-------------------+------------------'
 
-  write (outlfn, '(a)') ''
-  write (outlfn, '(a)') '4. CORRECTIONS FOR CODE/PHASE BIASES'
-  write (outlfn, '(a)') '---------+---------+-------------------'
-  write (outlfn, '(a)') ' PRN FRQ | A MJDAY | OCB_CORR OPB_CORR '
-  write (outlfn, '(a)') '         |         |     (ps)     (ps) '
-  write (outlfn, '(a)') '---------+---------+-------------------'
-  do ic = 0, MAXCMB
-    k = ic
-    if (k .le. 1) k = 1
-    do iprn = 1, nprn
-      key = ''
-      if (.not. avlprn(k, iprn, 0)) then
-        cycle
-      end if
-      i0 = index(GNSS_PRIO, prnlst(iprn)(1:1))
-      if (ic .ge. 1) then
-        j = IDXFRQ_MUL(k, i0, 2)
-        if (ic .ge. 2) then
-          if (all(IDXFRQ_MUL(ic, i0, :) .eq. IDXFRQ_MUL(ic - 1, i0, :))) cycle
-        end if
-      else
-        j = IDXFRQ_MUL(k, i0, 1)
-      end if
-      write (outlfn, '(a4,i4,2(1x,a1),i6,4(1x,a1,2i9))') &
-        prnlst(iprn), j, '|', key, mjd1,                 &
-        '|', nint(1E12 * ocb_off(ic, iprn)), & 
-             nint(1E12 * opb_off(ic, iprn))
-    end do
-  end do
-  write (outlfn, '(a)') '---------+---------+-------------------'
 !
 !! output orbit, clock & bias
   if (l_extorb) then
@@ -1142,6 +1181,9 @@ program algirc
       end if
     end if
   end if
+
+  ! Preserve per-channel OSB discontinuities before clock/orbit/GF removal.
+  osb_dbd = ocb_itf_dbd(0:1, :, :)
 
   do ic = 0, MAXCMB
     ocb_dbd(ic, :) = ocb_dbd(ic, :) - ((clk_dbd + clk_off) - orb_dbd)
@@ -1177,6 +1219,65 @@ program algirc
         end if
       end do
     end do
+  end do
+
+  write (outlfn, '(a)') ''
+  ! Residuals use the same sign and GF datum as the forward DOCB output.
+  write (outlfn, '(a)') '4. CORRECTIONS AND RESIDUALS FOR CODE/PHASE BIASES'
+  do ibias = 1, 2
+    write (outlfn, '(a)') ''
+    if (ibias .eq. 1) then
+      write (outlfn, '(a)') '4.1 CORRECTIONS AND RESIDUALS FOR PHASE BIASES'
+      write (outlfn, '(a)') '---------+---------+----------+------------------'
+      write (outlfn, '(a)') ' PRN FRQ | A MJDAY |  PH_CORR |  PH_RESI  PH_RESI'
+      write (outlfn, '(a)') '         |         |     (ps) |     (ps)    (mcy)'
+      write (outlfn, '(a)') '---------+---------+----------+------------------'
+    else
+      write (outlfn, '(a)') '4.2 CORRECTIONS AND RESIDUALS FOR CODE BIASES'
+      write (outlfn, '(a)') '---------+---------+-----+----------+------------------'
+      write (outlfn, '(a)') ' PRN FRQ | A MJDAY | OBS |  CD_CORR |  OSB_DBD  CD_RESI  CD_RESI'
+      write (outlfn, '(a)') '         |         |     |     (ps) |     (ns)     (ps)     (mm)'
+      write (outlfn, '(a)') '---------+---------+-----+----------+------------------'
+    end if
+    do ic = 0, 1
+      k = max(1, ic)
+      do iprn = 1, nprn
+        if (.not. avlprn(k, iprn, 0)) cycle
+        key = ''
+        i0 = index(GNSS_PRIO, prnlst(iprn)(1:1))
+        if (ic .ge. 1) then
+          j = IDXFRQ_MUL(k, i0, 2)
+          dummy = FRQ2(k, i0)
+        else
+          j = IDXFRQ_MUL(k, i0, 1)
+          dummy = FRQ1(k, i0)
+        end if
+        if (ibias .eq. 1) then
+          var = opb_dbd(ic, iprn) + opb_off(ic, iprn)
+          write (outlfn, '(a4,i4,2(1x,a1),i6,1x,a1,i9,1x,a1,2i9)') &
+            prnlst(iprn), j, '|', key, mjd1, &
+            '|', nint(1E12 * opb_off(ic, iprn)), &
+            '|', nint(1E12 * var), nint(dummy * 1E3 * var)
+        else
+          do it = 1, MAXTYP/4
+            if (.not. avlprn(ic, iprn, it)) cycle
+            if (OBS_PRIO_SYS(i0)(it:it) .eq. '') cycle
+            if (abs(ocb_itf_dbd(ic, iprn, it)) .ge. 1.d9/VLIGHT) cycle
+            var = ocb_itf_dbd(ic, iprn, it)
+            write (outlfn, '(a4,i4,2(1x,a1),i6,1x,a1,1x,a1,i1,a1,1x,a1,i9,1x,a1,f9.3,2i9)') &
+              prnlst(iprn), j, '|', key, mjd1, &
+              '|', 'C', j, OBS_PRIO_SYS(i0)(it:it), &
+              '|', nint(1E12 * ocb_off(ic, iprn)), &
+              '|', 1E9 * osb_dbd(ic, iprn, it), nint(1E12 * var), nint(VLIGHT * 1E3 * var)
+          end do
+        end if
+      end do
+    end do
+    if (ibias .eq. 1) then
+      write (outlfn, '(a)') '---------+---------+----------+------------------'
+    else
+      write (outlfn, '(a)') '---------+---------+-----+----------+------------------'
+    end if
   end do
 
   if (any(opb_off .ne. 0.d0)) then
