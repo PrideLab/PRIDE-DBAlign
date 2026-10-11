@@ -11,7 +11,8 @@ OBJ_PATH = .obj/
 FTN = gfortran
 FFLAGS = -g -O3
 
-SRC := dot.f90 \
+SRC := cross.f90 \
+       dot.f90 \
        earth_rotation.f90 \
        ef2int.f90 \
        findkey.f90 \
@@ -28,6 +29,7 @@ SRC := dot.f90 \
        timdif.f90 \
        timinc.f90 \
        trig_poly_extrap.f90 \
+       unit_vector.f90 \
        yeardoy2monthday.f90 \
        yr2year.f90
 SRC_FOR := $(wildcard sofa/*.for)
