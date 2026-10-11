@@ -125,6 +125,7 @@ if [[ "$HOME" == /root* ]]; then
     exit 1
 fi
 
+rm -rf -- "$INSTALL_DIR"
 make -C src clean
 make -C src
 make -C src install
@@ -132,13 +133,10 @@ make -C src install
 mkdir -p "$INSTALL_DIR"
 install_leap_seconds
 cp -f bin/algirc* "$INSTALL_DIR"/
-rm -f "$INSTALL_DIR/pdba.sh" "$INSTALL_DIR/pdba_plot.sh"
 install -m 755 "$RUN_SCRIPT" "$INSTALL_DIR/pdba"
 install -m 755 "$PLOT_RUN_SCRIPT" "$INSTALL_DIR/pdba_plot"
 install -m 755 scripts/plot-orbdbd.py "$INSTALL_DIR"/
-install -m 755 scripts/plot-wlpdbd.py "$INSTALL_DIR"/
-install -m 755 scripts/plot-dcbdbd.py "$INSTALL_DIR"/
-install -m 755 scripts/plot-ircdbd.py "$INSTALL_DIR"/
+install -m 755 scripts/plot-docb.py "$INSTALL_DIR"/
 install -m 644 "$CONFIG_TEMPLATE" "$INSTALL_DIR/config_template"
 install -m 644 "$SAT_PARAMETERS" "$INSTALL_DIR/sat_parameters"
 chmod 755 "$INSTALL_DIR"/algirc* "$INSTALL_DIR"/pdba "$INSTALL_DIR"/pdba_plot "$INSTALL_DIR"/plot-*.py
