@@ -41,6 +41,7 @@ contains
     integer*4     clklfn, ierr
     integer*4     mjd_tmp, year, month, day, hour, minute
     real*8        sod_tmp, second
+    character*3   prn
     character*256 line
   !
   !! function used
@@ -64,7 +65,8 @@ contains
       if (ierr .eq. iostat_end) exit
       if (ierr .ne. 0) call read_error()
       if ('AS ' .eq. line(1:3)) then
-        read (line(9:34), *) year, month, day, hour, minute, second
+        read (line(4:), *, iostat=ierr) prn, year, month, day, hour, minute, second
+        if (ierr .ne. 0) call read_error()
         mjd_tmp = modified_julday(day, month, year)
         sod_tmp = hour*3600 + minute*60 + second
         if (mjd .eq. 0) then
@@ -139,11 +141,13 @@ contains
     real*8        clk_extp(MAXSAT)
   !
   !! local variable
-    integer*4     oldlfn, newlfn, ierr, ipt
+    integer*4     oldlfn, newlfn, ierr
+    integer*4     year, month, day, hour, minute, nval, nfirst
     integer*4     iprn
     character*256 filnam, line, clk_template(MAXSAT)
     logical*1     l_extpresent(MAXSAT), l_clktpl(MAXSAT)
-    real*8        val
+    real*8        second, values(2)
+    character*3   prn
   !
   !! function used
     integer*4     pointer_string
@@ -203,14 +207,24 @@ contains
       if ('AS ' .eq. line(1:3)) then
         iprn = pointer_string(nprn, prnlst, line(4:6))
         if (iprn .gt. 0) then
-          ipt = 40
-          if (len_trim(line(9:12)) .eq. 0) ipt = ipt + 5
-          read (line(ipt:ipt+19), *, iostat=ierr) val
-          if (ierr .gt. 0) call read_error()
-          ! Preserve the original runtime termination on an incomplete internal record.
-          if (ierr .lt. 0) read (line(ipt:ipt+19), *) val
-          val = val + clk_off(iprn)
-          write (newlfn, '(a,e19.12,a)') line(1:ipt), val, trim(line(ipt+20:))
+          ! Decode complete fields, including nonstandard extra leading spaces.
+          read (line(4:), *, iostat=ierr) prn, year, month, day, hour, minute, second, nval
+          if (ierr .ne. 0) call read_error()
+          if (nval .lt. 1 .or. nval .gt. 6) call read_error()
+          nfirst = min(nval, 2)
+          read (line(4:), *, iostat=ierr) prn, year, month, day, hour, minute, second, nval, values(1:nfirst)
+          if (ierr .ne. 0) call read_error()
+          values(1) = values(1) + clk_off(iprn)
+          ! Rewrite the whole AS record; optional continuation lines are copied below.
+          if (len_trim(line(9:12)) .eq. 0) then
+            ! RINEX clock 3.04: bias in columns 46:64, sigma in 67:85.
+            write (newlfn, '(a3,a3,7x,i4,1x,4(i2,1x),f9.6,1x,i2,3x,e19.12,:,2x,e19.12)') &
+              'AS ', prn, year, month, day, hour, minute, second, nval, values(1:nfirst)
+          else
+            ! RINEX clock 3.02 and earlier: bias in 41:59, sigma in 61:79.
+            write (newlfn, '(a3,a3,2x,i4,4i3,f10.6,i3,3x,e19.12,:,1x,e19.12)') &
+              'AS ', prn, year, month, day, hour, minute, second, nval, values(1:nfirst)
+          end if
           cycle
         end if
       end if
@@ -257,7 +271,7 @@ contains
     character*256 line
     logical*1     l_template
     real*8        second, val
-    real*8, parameter :: PREDICTED_CLOCK_STDDEV = 9.999d99
+    real*8, parameter :: PREDICTED_CLOCK_STDDEV = 9.999d98
 
     call mjd2doy(ext_mjd, year, doy)
     call yeardoy2monthday(year, doy, month, day)
@@ -289,10 +303,10 @@ contains
 
       if (l_template) then
         write (line(ipt-5:ipt), '(2x,i1,3x)') 2
-        ! Use ES with an explicit exponent width to retain E+99 in the standard deviation.
-        write (newlfn, '(a,e19.12,1x,es19.12e2)') line(1:ipt), val, PREDICTED_CLOCK_STDDEV
+        ! The prediction marker fits E19.12 with a two-digit exponent.
+        write (newlfn, '(a,e19.12,1x,e19.12)') line(1:ipt), val, PREDICTED_CLOCK_STDDEV
       else
-        write (newlfn, '(a3,a3,7x,i4,4(1x,i2.2),f10.6,2x,i1,3x,e19.12,1x,es19.12e2)') &
+        write (newlfn, '(a3,a3,7x,i4,4(1x,i2.2),f10.6,2x,i1,3x,e19.12,1x,e19.12)') &
           'AS ', prnlst(iprn), year, month, day, hour, minute, second, 2, val, PREDICTED_CLOCK_STDDEV
       end if
     end do
