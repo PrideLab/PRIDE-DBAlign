@@ -81,7 +81,7 @@ Processing options:
   -sys <char>, --system <char>              GNSS systems selected from G, E and C
                                               * default: GEC)
   -ubd23 <YES|NO>, --unify-bds23 <YES|NO>  unify BDS-2/3 datum
-                                              * default: YES for MJD >= 61152, otherwise NO
+                                              * default: YES for MJD > 61152, otherwise NO
 
 Configuration precedence:
   command-line option > configuration file > built-in default
