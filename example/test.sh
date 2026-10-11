@@ -135,5 +135,5 @@ printf "${BLUE}::${NC} run the 2026 PRIDE DBAlign example\n"
     check_generated_config config_pdba_2026002
 )
 
-printf "${BLUE}::${NC} results are put in %s, %s and %s\n" \
+printf "${BLUE}::${NC} results are put in %s and %s\n" \
     "$case_dir/2025" "$case_dir/2026"
