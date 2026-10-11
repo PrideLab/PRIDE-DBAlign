@@ -37,9 +37,7 @@ readonly LOG_PATTERN="algirc-[0-9][0-9][0-9][0-9][0-9].out"
 readonly SAT_PARAMETERS_URL="ftp://igs.gnsswhu.cn/pub/whu/phasebias/table/sat_parameters"
 readonly PLOT_SCRIPTS="${PDBA_PLOT_SCRIPTS:-
 plot-orbdbd.py
-plot-wlpdbd.py
-plot-dcbdbd.py
-plot-ircdbd.py
+plot-docb.py
 }"
 
 print_usage() {
