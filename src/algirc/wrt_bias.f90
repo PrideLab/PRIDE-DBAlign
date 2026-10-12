@@ -154,7 +154,7 @@ contains
       end do adjust_bias_record
       write (newlfn, '(a)') trim(line)
       if (line(1:5)  .eq. "%=BIA") then
-        read (line, '(49x,i4,1x,i3)') year0, doy0 
+        read (line, '(34x,i4,1x,i3)') year0, doy0
       else if (line(1:17) .eq. "-BIAS/DESCRIPTION") then
         if (l_wrt_docb) then
           write (newlfn, '(a)') "*-------------------------------------------------------------------------------" 
