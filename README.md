@@ -1,7 +1,7 @@
 ![pridelab.icon](https://github.com/PrideLab/PRIDE-DBAlign/blob/main/doc/PRIDE.png)
 
 
-## PRIDE DBAlign v1.0
+## PRIDE DBAlign ver. 1.01
 
 **Multi-GNSS Satellite Product Day-Boundary Discontinuity Alignment Toolkit**
 
@@ -39,13 +39,13 @@ PRIDE DBAlign is capable of performing day-boundary alignment on multi-GNSS prec
 
 ## Version History
 
-### 2026-10-11 (v1.0)
+### 2026-10-11 (v1.01)
 * `scripts`: update the plotting scripts
 * `src`: update the content of logfile
 
-### 2026-09-18 (v1.0)
+### 2026-09-18 (v1.00)
 
-Release of **PRIDE DBAlign v1.0**
+Release of **PRIDE DBAlign v1.00**
 
 
 ## Getting in Touch
