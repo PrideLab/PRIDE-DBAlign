@@ -571,8 +571,9 @@ def plot_code_docb_out(fignam, satlst, flglst, datasec42, mjd, mjd0, mjd1):
             day_values = data[sat_idx, freq_idx, 1, mjd - mjd0]
             avl_sat = day_values >= 0.0
             rms = pylab.sqrt(pylab.mean(day_values[avl_sat] ** 2)) if avl_sat.any() else pylab.nan
+            channel = CODE_CHANNELS[prnlst[sat_idx[0]][0]][freq_idx]
             ax[i, j].set_title(
-                "Mean RMS (" + sysidx[i][j + 1][1] + ") on %d/%d: %5.2f ns"
+                "Mean RMS (" + sysidx[i][j + 1][1] + ": " + channel + ") on %d/%d: %5.2f ns"
                 % (year, doy, rms),
                 fontsize=16,
                 pad=8,
