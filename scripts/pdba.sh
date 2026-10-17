@@ -976,7 +976,7 @@ main() {
         die "$ALGFILE executable not found in PATH"
     fi
 
-    # algirc runs in the product directory and reads its local leap-second table.
+    # algirc runs in the product directory and reads its local auxiliary tables.
     # The script directory also supports custom installations after the installer
     # environment variable is no longer set.
     local leap_source="${PRIDE_DBALIGN_INSTALL_DIR:-$SCRIPT_DIR}/leap.sec"
@@ -985,6 +985,15 @@ main() {
     fi
     if [ ! "$leap_source" -ef "$product_directory/leap.sec" ]; then
         cp -f -- "$leap_source" "$product_directory/leap.sec" || die "failed to copy leap.sec to $product_directory"
+    fi
+
+    local sat_source="${PRIDE_DBALIGN_INSTALL_DIR:-$SCRIPT_DIR}/sat_parameters"
+    if [ ! -f "$sat_source" ] && [ -f "$SCRIPT_DIR/../table/sat_parameters" ]; then
+        sat_source="$SCRIPT_DIR/../table/sat_parameters"
+    fi
+    # Only extrapolation needs this table; algirc reports a missing table then.
+    if [ -f "$sat_source" ] && [ ! "$sat_source" -ef "$product_directory/sat_parameters" ]; then
+        cp -f -- "$sat_source" "$product_directory/sat_parameters" || die "failed to copy sat_parameters"
     fi
 
     printf "[pdba] Target date       : %s/%s\n" "$TARGET_YEAR" "$TARGET_DOY"
