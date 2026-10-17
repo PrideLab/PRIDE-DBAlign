@@ -2,7 +2,7 @@
 
 ## PRIDE DBAlign version 1.01
 
-### 2026-10-11 (v1.01)
+### 2026-10-17 (v1.01)
 * `scripts`: update the plotting scripts
 * `src`: update the content of logfile
 
