@@ -6,7 +6,7 @@
 ##                                                                           ##
 ##  AUTHOR : PRIDE LAB      pride@apm.ac.cn                                  ##
 ##                                                                           ##
-##  VERSION: ver 1.01                                                         ##
+##  VERSION: ver 1.0.1                                                         ##
 ##                                                                           ##
 ##  DATE   : September-18, 2026                                              ##
 ##                                                                           ##
@@ -29,7 +29,7 @@
 set -e
 
 PROJECT_NAME="PRIDE DBAlign"
-VERSION_NUM="1.01"
+VERSION_NUM="1.0.1"
 INSTALL_DIR="${PRIDE_DBALIGN_INSTALL_DIR:-${HOME}/.PRIDE_DBAlign_BIN}"
 RUN_SCRIPT="scripts/pdba.sh"
 PLOT_RUN_SCRIPT="scripts/pdba_plot.sh"
