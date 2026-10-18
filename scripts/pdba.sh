@@ -6,7 +6,7 @@
 ##                                                                           ##
 ##  AUTHOR : PRIDE LAB      pride@apm.ac.cn                                  ##
 ##                                                                           ##
-##  VERSION: ver 1.0                                                         ##
+##  VERSION: ver 1.0.1                                                         ##
 ##                                                                           ##
 ##  DATE   : August-06, 2026                                                 ##
 ##                                                                           ##
@@ -30,7 +30,7 @@ set -u
 set -o pipefail
 
 readonly SCRIPT_NAME="$(basename "$0")"
-readonly VERSION_NUM="1.0"
+readonly VERSION_NUM="1.0.1"
 readonly WORK_DIR="$(pwd -P)"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 readonly ALGFILE="algirc"
